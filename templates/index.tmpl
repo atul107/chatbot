@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        input[type="text"], input[type="file"], button {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: block;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="file"] {
+            padding: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #chatOutput {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 200px;
+            overflow-y: scroll;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 20px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chatbot Interface</h1>
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+        <div id="chatOutput"></div>
+
+        <div>
+            <input type="file" id="imageInput">
+            <input type="text" id="uploadUserIdInput" placeholder="Enter your user ID for upload...">
+            <button onclick="uploadImage()">Upload Image</button>
+        </div>
+
+        <input type="text" id="imageNameInput" placeholder="Enter image name...">
+        <input type="text" id="retrieveUserIdInput" placeholder="Enter your user ID for retrieve...">
+        <button onclick="retrieveImage()">Retrieve Image</button>
+        <div id="imageContainer"></div>
+    </div>
+
+    <script>
+        function sendMessage() {
+            var message = document.getElementById('messageInput').value;
+            var token = 'BEARER_TOKEN'; 
+
+            fetch('/api/v1/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ message: message }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                appendMessage(data.message);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function uploadImage() {
+            var formData = new FormData();
+            var image = document.getElementById('imageInput').files[0];
+            var imageName = image.name; // Extracting file name
+            var userId = document.getElementById('uploadUserIdInput').value;
+
+            formData.append("image", image);
+            formData.append("user_id", userId);
+            var token = 'BEARER_TOKEN'; 
+
+            fetch(`/api/v1/upload`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.message) {
+                    showUploadSuccessToast(data.message); // Call function to show toast
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Function to show toast for successful image upload
+        function showUploadSuccessToast(message) {
+            // Create toast element
+            var toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = '#1E90FF';
+            toast.style.color = 'white';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '4px';
+            toast.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            // Append toast to body
+            document.body.appendChild(toast);
+            // Remove toast after 3 seconds
+            setTimeout(function() {
+                toast.remove();
+            }, 3000);
+        }
+
+        function retrieveImage() {
+            var token = 'BEARER_TOKEN'; 
+            var userId = document.getElementById('retrieveUserIdInput').value;
+            var imageName = document.getElementById('imageNameInput').value;
+
+            fetch(`/api/v1/image/${userId}/${imageName}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                renderImage(data.image);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function renderImage(imageData) {
+            var imageContainer = document.getElementById('imageContainer');
+            var imageElement = document.createElement('img');
+            imageElement.src = "data:image/png;base64," + imageData;
+            imageContainer.innerHTML = ''; // Clear previous image
+            imageContainer.appendChild(imageElement);
+        }
+
+        function appendMessage(message) {
+            var chatOutput = document.getElementById('chatOutput');
+            var messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            chatOutput.appendChild(messageElement);
+        }
+    </script>
+</body>
+</html>

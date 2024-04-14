@@ -1,0 +1,13 @@
+# Binaries for programs and plugins
+*.exe
+
+# Editor directories and files
+.vscode/
+
+# Environment variable files
+.env
+.env.test
+
+#builds
+chatbot
+
